@@ -1,0 +1,1 @@
+This is the beginning of a pokedexcli program for Boot.Dev's course.
