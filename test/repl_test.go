@@ -36,14 +36,14 @@ func TestCleanInput(t *testing.T) {
 	for _, c := range cases {
 		actual := funcs.CleanInput(c.input)
 		if len(actual) != len(c.expected) {
-			t.Errorf("actual (%d) and expected (%d) total lengths do not match", len(actual), len(c.expected))
+			t.Errorf("actual length: %d != expected length: %d", len(actual), len(c.expected))
 		}
 		for i := range actual {
 			word := actual[i]
 			expectedWord := c.expected[i]
 
 			if word != expectedWord {
-				t.Errorf("actual word: %s and expected word: %s are not equal", word, expectedWord)
+				t.Errorf("actual word: %s != expected word: %s", word, expectedWord)
 			}
 		}
 	}
