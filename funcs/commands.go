@@ -5,19 +5,36 @@ import (
 	"os"
 )
 
-type cliCommand struct {
+const pokeapiURL = "https://pokeapi.co/api/v2/location-area/"
+
+type CliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*Config) error
 }
 
-func CommandExit() error {
+type LocationAreas struct {
+	Count    int     `json:"count"`
+	Next     *string `json:"next"`
+	Previous *string `json:"previous"`
+	Results  []struct {
+		Name string `json:"name"`
+		URL  string `json:"url"`
+	} `json:"results"`
+}
+
+type Config struct {
+	Next     *string
+	Previous *string
+}
+
+func CommandExit(cfg *Config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func CommandHelp() error {
+func CommandHelp(cfg *Config) error {
 	commands := GetCommands()
 
 	fmt.Println()
@@ -31,9 +48,9 @@ func CommandHelp() error {
 	return nil
 }
 
-func GetCommands() map[string]cliCommand {
+func GetCommands() map[string]CliCommand {
 
-	commands := map[string]cliCommand{
+	commands := map[string]CliCommand{
 		"exit": {
 			name:        "exit",
 			description: "Exit the Pokedex",
@@ -44,7 +61,60 @@ func GetCommands() map[string]cliCommand {
 			description: "Explains the functions of the Pokedex",
 			callback:    CommandHelp,
 		},
+		"map": {
+			name:        "map",
+			description: "Shows the next 20 locations of the PokeWorld",
+			callback:    CommandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Shows the previous 20 locations of the PokeWorld",
+			callback:    CommandMapBack,
+		},
 	}
 
 	return commands
+}
+
+func CommandMap(cfg *Config) error {
+	url := pokeapiURL
+
+	if cfg.Next != nil {
+		url = *cfg.Next
+	}
+
+	areaList, err := GetLocations(url)
+	if err != nil {
+		return fmt.Errorf("error encountered: %v", err)
+	}
+
+	for _, area := range areaList.Results {
+		fmt.Println(area.Name)
+	}
+
+	cfg.Next = areaList.Next
+	cfg.Previous = areaList.Previous
+
+	return nil
+}
+
+func CommandMapBack(cfg *Config) error {
+	if cfg.Previous == nil {
+		fmt.Println("You cannot go back without first going forward!")
+		return nil
+	}
+
+	areaList, err := GetLocations(*cfg.Previous)
+	if err != nil {
+		return fmt.Errorf("error encountered: %v", err)
+	}
+
+	for _, area := range areaList.Results {
+		fmt.Println(area.Name)
+	}
+
+	cfg.Next = areaList.Next
+	cfg.Previous = areaList.Previous
+
+	return nil
 }

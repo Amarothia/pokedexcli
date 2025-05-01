@@ -7,6 +7,7 @@ import (
 )
 
 func StartRepl() {
+	cfg := &Config{}
 
 	reader := bufio.NewScanner(os.Stdin)
 
@@ -25,7 +26,7 @@ func StartRepl() {
 		command, exists := GetCommands()[commandName]
 
 		if exists {
-			err := command.callback()
+			err := command.callback(cfg)
 			if err != nil {
 				fmt.Println(err)
 			}
