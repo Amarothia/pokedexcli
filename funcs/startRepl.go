@@ -22,7 +22,17 @@ func StartRepl() {
 
 		commandName := words[0]
 
-		fmt.Printf("Your command was: %s\n", commandName)
-	}
+		command, exists := GetCommands()[commandName]
 
+		if exists {
+			err := command.callback()
+			if err != nil {
+				fmt.Println(err)
+			}
+			continue
+		} else {
+			fmt.Println("Unknown command")
+			continue
+		}
+	}
 }
