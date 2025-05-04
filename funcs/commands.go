@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const pokeapiURL = "https://pokeapi.co/api/v2/location-area/"
+const pokeapiURL = "https://pokeapi.co/api/v2/location-area/?offset=0&limit=20"
 
 type CliCommand struct {
 	name        string
@@ -26,6 +26,7 @@ type LocationAreas struct {
 type Config struct {
 	Next     *string
 	Previous *string
+	Cache    map[string]LocationAreas
 }
 
 func CommandExit(cfg *Config) error {
@@ -83,9 +84,15 @@ func CommandMap(cfg *Config) error {
 		url = *cfg.Next
 	}
 
-	areaList, err := GetLocations(url)
-	if err != nil {
-		return fmt.Errorf("error encountered: %v", err)
+	var areaList LocationAreas
+	var ok bool
+	var err error
+
+	if areaList, ok = cfg.Cache[url]; !ok {
+		areaList, err = GetLocations(url)
+		if err != nil {
+			return fmt.Errorf("error encountered: %v", err)
+		}
 	}
 
 	for _, area := range areaList.Results {
@@ -94,20 +101,32 @@ func CommandMap(cfg *Config) error {
 
 	cfg.Next = areaList.Next
 	cfg.Previous = areaList.Previous
+	cfg.Cache[url] = areaList
 
 	return nil
 }
 
 func CommandMapBack(cfg *Config) error {
-	if cfg.Previous == nil {
-		fmt.Println("You cannot go back without first going forward!")
-		return nil
+	url := pokeapiURL
+
+	if cfg.Previous != nil {
+		url = *cfg.Previous
 	}
 
-	areaList, err := GetLocations(*cfg.Previous)
-	if err != nil {
-		return fmt.Errorf("error encountered: %v", err)
-	}
+	/*
+		var areaList LocationAreas
+		var ok bool
+		var err error
+
+		if areaList, ok = cfg.Cache[url]; !ok {
+			areaList, err = GetLocations(url)
+			if err != nil {
+				return fmt.Errorf("error encountered: %v", err)
+			}
+		}
+	*/
+
+	areaList := cfg.Cache[url]
 
 	for _, area := range areaList.Results {
 		fmt.Println(area.Name)

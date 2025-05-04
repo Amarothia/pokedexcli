@@ -8,6 +8,7 @@ import (
 
 func StartRepl() {
 	cfg := &Config{}
+	cfg.Cache = make(map[string]LocationAreas)
 
 	reader := bufio.NewScanner(os.Stdin)
 
