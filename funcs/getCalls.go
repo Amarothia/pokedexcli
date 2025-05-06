@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func GetLocations(url string) (LocationAreas, error) {
+func GetLocationAreas(url string) (LocationAreas, error) {
 
 	var areaList LocationAreas
 
@@ -24,7 +24,7 @@ func GetLocations(url string) (LocationAreas, error) {
 	return areaList, nil
 }
 
-func GetPokemon(url string) (LocationAreaEncounters, error) {
+func GetLocationAreaEncounters(url string) (LocationAreaEncounters, error) {
 	var lae LocationAreaEncounters
 
 	res, err := http.Get(url)
@@ -39,4 +39,21 @@ func GetPokemon(url string) (LocationAreaEncounters, error) {
 	}
 
 	return lae, nil
+}
+
+func GetPokemon(url string) (Pokemon, error) {
+	var pokemon Pokemon
+
+	res, err := http.Get(url)
+	if err != nil {
+		return pokemon, fmt.Errorf("encountered error: %v", err)
+	}
+	defer res.Body.Close()
+
+	err = json.NewDecoder(res.Body).Decode(&pokemon)
+	if err != nil {
+		return pokemon, fmt.Errorf("encountered error: %v", err)
+	}
+
+	return pokemon, nil
 }
