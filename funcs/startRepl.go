@@ -8,7 +8,8 @@ import (
 
 func StartRepl() {
 	cfg := &Config{}
-	cfg.Cache = make(map[string]LocationAreas)
+	cfg.LocationAreaCache = make(map[string]LocationAreas)
+	cfg.PokemonCache = make(map[string]LocationAreaEncounters)
 
 	reader := bufio.NewScanner(os.Stdin)
 
@@ -23,6 +24,13 @@ func StartRepl() {
 		}
 
 		commandName := words[0]
+
+		if commandName == "explore" && len(words) < 2 {
+			fmt.Println("Please use syntax 'explore <area name>' to find Pokemon!")
+			continue
+		} else if commandName == "explore" {
+			cfg.AreaName = &words[1]
+		}
 
 		command, exists := GetCommands()[commandName]
 

@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const pokeapiURL = "https://pokeapi.co/api/v2/location-area/?offset=0&limit=20"
+const pokeapiURL = "https://pokeapi.co/api/v2/location-area/"
 
 type CliCommand struct {
 	name        string
@@ -23,10 +23,20 @@ type LocationAreas struct {
 	} `json:"results"`
 }
 
+type LocationAreaEncounters struct {
+	Encounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
+}
+
 type Config struct {
-	Next     *string
-	Previous *string
-	Cache    map[string]LocationAreas
+	Next              *string
+	Previous          *string
+	LocationAreaCache map[string]LocationAreas
+	PokemonCache      map[string]LocationAreaEncounters
+	AreaName          *string
 }
 
 func CommandExit(cfg *Config) error {
@@ -72,13 +82,45 @@ func GetCommands() map[string]CliCommand {
 			description: "Shows the previous 20 locations of the PokeWorld",
 			callback:    CommandMapBack,
 		},
+		"explore": {
+			name:        "explore",
+			description: "Explore <area name> in order to see the Pokemon that live there",
+			callback:    CommandExplore,
+		},
 	}
 
 	return commands
 }
 
+func CommandExplore(cfg *Config) error {
+	if cfg.AreaName == nil {
+		return fmt.Errorf("explore syntax incorrect, please use explore <area name>")
+	}
+
+	url := pokeapiURL + *cfg.AreaName
+
+	var lae LocationAreaEncounters
+	var ok bool
+	var err error
+
+	if lae, ok = cfg.PokemonCache[url]; !ok {
+		lae, err = GetPokemon(url)
+		if err != nil {
+			return fmt.Errorf("encountered error: %v", err)
+		}
+	}
+
+	for _, encounter := range lae.Encounters {
+		fmt.Printf("-%s\n", encounter.Pokemon.Name)
+	}
+
+	cfg.PokemonCache[url] = lae
+
+	return nil
+}
+
 func CommandMap(cfg *Config) error {
-	url := pokeapiURL
+	url := pokeapiURL + "?offset=0&limit=20"
 
 	if cfg.Next != nil {
 		url = *cfg.Next
@@ -88,7 +130,7 @@ func CommandMap(cfg *Config) error {
 	var ok bool
 	var err error
 
-	if areaList, ok = cfg.Cache[url]; !ok {
+	if areaList, ok = cfg.LocationAreaCache[url]; !ok {
 		areaList, err = GetLocations(url)
 		if err != nil {
 			return fmt.Errorf("error encountered: %v", err)
@@ -101,32 +143,19 @@ func CommandMap(cfg *Config) error {
 
 	cfg.Next = areaList.Next
 	cfg.Previous = areaList.Previous
-	cfg.Cache[url] = areaList
+	cfg.LocationAreaCache[url] = areaList
 
 	return nil
 }
 
 func CommandMapBack(cfg *Config) error {
-	url := pokeapiURL
+	url := pokeapiURL + "?offset=0&limit=20"
 
 	if cfg.Previous != nil {
 		url = *cfg.Previous
 	}
 
-	/*
-		var areaList LocationAreas
-		var ok bool
-		var err error
-
-		if areaList, ok = cfg.Cache[url]; !ok {
-			areaList, err = GetLocations(url)
-			if err != nil {
-				return fmt.Errorf("error encountered: %v", err)
-			}
-		}
-	*/
-
-	areaList := cfg.Cache[url]
+	areaList := cfg.LocationAreaCache[url]
 
 	for _, area := range areaList.Results {
 		fmt.Println(area.Name)
