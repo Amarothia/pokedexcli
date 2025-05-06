@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 )
 
 const pokeapiURL = "https://pokeapi.co/api/v2/"
@@ -105,6 +106,11 @@ func GetCommands() map[string]CliCommand {
 			description: "Inspect <pokemon name> to learn more about a Pokemon",
 			callback:    CommandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Shows the pokemon you've caught so far",
+			callback:    CommandPokedex,
+		},
 		"map": {
 			name:        "map",
 			description: "Shows the next 20 locations of the PokeWorld",
@@ -125,6 +131,15 @@ func GetCommands() map[string]CliCommand {
 	return commands
 }
 
+func CommandPokedex(cfg *Config) error {
+	err := cfg.Player.GetPokedex()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return nil
+	}
+	return nil
+}
+
 func CommandInspect(cfg *Config) error {
 
 	pokemon, ok := cfg.Player.InspectPokemon(*cfg.InspectPokemon)
@@ -135,6 +150,10 @@ func CommandInspect(cfg *Config) error {
 
 	fmt.Printf("Name: %s\nHeight: %d\nWeight: %d\nStats:\n  -hp: %d\n  -attack: %d\n  -defense %d\n  -special-attack %d\n  -special-defense %d\n  -speed %d\nTypes:\n",
 		pokemon.Name, pokemon.Height, pokemon.Weight, pokemon.Stats[0].BaseStat, pokemon.Stats[1].BaseStat, pokemon.Stats[2].BaseStat, pokemon.Stats[3].BaseStat, pokemon.Stats[4].BaseStat, pokemon.Stats[5].BaseStat)
+
+	sort.Slice(pokemon.Types, func(i, j int) bool {
+		return pokemon.Types[i].Type.Name < pokemon.Types[j].Type.Name
+	})
 
 	for _, pokemonType := range pokemon.Types {
 		fmt.Printf("  - %s\n", pokemonType.Type.Name)
